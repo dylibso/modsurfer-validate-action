@@ -30,39 +30,56 @@ To use this action, add the following step in your workflow:
 An example `mod.yaml` (a "check file") could be: 
 
 ```yaml
+# For more information about other checkfile options, see the documentation at https://dev.dylib.so/docs/modsurfer/cli#checkfile
 validate:
-  # url: https://github.com/extism/extism/blob/main/mod.yaml
+  # mandate that WASI support is allowed or not
   allow_wasi: false
-  
+  # define requirements for existence (or non-existence) of a module's import functions
   imports:
     include:
-      - http_get
-      - log_message
-      - proc_exit
+    # specify the function and its signature, optionally scoping it to a particular module name / namespace
+    - name: http_get
+      namespace: env
+      params: 
+      - I32
+      - I32
+      results:
+      - I32
+    # or, simply use the function name
+    - log_message
+    - proc_exit
     exclude: 
-      - fd_write
+    - fd_write
+    # declare module-wide requirements for existence (or non-existence) of imports from modules / namespaces
     namespace:
       include:
         - env
       exclude:
         - some_future_deprecated_module_name
         - wasi_snapshot_preview1
-
+  # define requirements for existence (or non-existence) of a module's export functions
   exports: 
-    max: 100
+  # set a threshold for maximum number of exports
+    max: 2
     include:
-      - _start
-      - bar
+    - name: _start
+      params: []
+      results: []
+    - name: bar
+      params:
+      - I32
+      - I32
+      results:
+      - I32
     exclude:
       - main
       - foo
-
+  # restrict binary size of a module (supports suffixes listed here: https://docs.rs/parse-size/1.0.0/parse_size/index.html)
   size:
     max: 4MB
-
+  # restrict WASM code complexity to a risk profile (low, medium, high) based on Cyclomatic Complexity analysis
   complexity:
     max_risk: low
-
 ```
 
 When a module fails to validate against the provided check file, a report is printed (seen below), 
